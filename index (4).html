@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>農作業日誌</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Noto+Serif+JP:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4efe6;--bg2:#ece5d5;--bg3:#e2d9c6;--white:#ffffff;
+  --soil:#2c1d0e;--bark:#52341a;--straw:#b8934a;--straw2:#d4ae6e;
+  --leaf:#3b6e2f;--leaf2:#558a47;--leaf-p:#eaf3e7;
+  --sky:#4078a0;--sky-p:#e4eff8;
+  --amber:#d4860a;--amber-p:#fef4e0;
+  --red:#c04a28;--red-p:#faeae3;
+  --purple:#6a42a0;--purple-p:#f2edfa;
+  --green2:#1a7a4a;--green2-p:#e4f4ec;
+  --ink:#1c1208;--ink2:#5a3c22;--ink3:#967558;--ink4:#c4a882;
+  --bdr:#d6c8b0;--shd:rgba(44,29,14,.10);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:15px}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;line-height:1.5;-webkit-text-size-adjust:100%}
+
+/* HEADER */
+header{background:var(--soil);position:sticky;top:0;z-index:300;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.hdr{max-width:700px;margin:0 auto;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.hdr-brand{display:flex;align-items:center;gap:9px}
+.hdr-icon{width:30px;height:30px;background:var(--leaf);border-radius:6px;display:grid;place-items:center;font-size:17px;flex-shrink:0}
+.hdr-title{font-family:'Noto Serif JP',serif;font-size:.97rem;font-weight:700;color:var(--straw2);letter-spacing:.1em}
+.hdr-date{font-size:.68rem;color:var(--ink4)}
+
+/* GAS STATUS BADGE */
+.gas-badge{display:flex;align-items:center;gap:5px;font-size:.68rem;padding:3px 9px;border-radius:20px;font-weight:700;cursor:pointer;border:none;background:rgba(255,255,255,.1);color:var(--ink4);transition:all .15s}
+.gas-badge.ok{background:rgba(85,138,71,.25);color:#7dc96a}
+.gas-badge.ng{background:rgba(192,74,40,.2);color:#f08060}
+.gas-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--soil);border-top:1.5px solid var(--bark);display:flex;box-shadow:0 -2px 12px rgba(0,0,0,.3)}
+.bnav-btn{flex:1;padding:8px 4px 10px;background:none;border:none;color:var(--ink4);font-family:'Noto Sans JP',sans-serif;font-size:.6rem;font-weight:500;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .15s;position:relative}
+.bnav-btn .ico{font-size:1.25rem;line-height:1}
+.bnav-btn.active{color:var(--straw2)}
+.bnav-btn.active::before{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--straw2);border-radius:0 0 3px 3px}
+
+/* LAYOUT */
+.wrap{max-width:700px;margin:0 auto;padding:16px 14px 88px}
+.page{display:none}
+.page.active{display:block}
+
+/* CARDS */
+.card{background:var(--white);border:1.5px solid var(--bdr);border-radius:14px;padding:18px 16px;margin-bottom:14px;box-shadow:0 2px 10px var(--shd)}
+.sec-ttl{font-family:'Noto Serif JP',serif;font-size:.95rem;color:var(--soil);font-weight:700;display:flex;align-items:center;gap:7px;margin-bottom:14px;padding-bottom:10px;border-bottom:1.5px solid var(--bg2)}
+
+/* FORM */
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:.72rem;font-weight:700;color:var(--ink2);letter-spacing:.04em}
+.fg label .req{color:var(--red)}
+select,input[type=text],input[type=date],input[type=time],input[type=number],input[type=url],textarea{
+  width:100%;padding:10px 12px;border:1.5px solid var(--bdr);border-radius:9px;
+  font-family:'Noto Sans JP',sans-serif;font-size:.9rem;color:var(--ink);
+  background:var(--bg);outline:none;transition:border-color .15s,box-shadow .15s;
+  -webkit-appearance:none;appearance:none
+}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23967558' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+select:focus,input:focus,textarea:focus{border-color:var(--leaf);background:#fff;box-shadow:0 0 0 3px rgba(59,110,47,.1)}
+textarea{resize:vertical;line-height:1.75;min-height:80px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* WEATHER */
+.weather-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:2px}
+.w-opt{padding:9px 4px;border:1.5px solid var(--bdr);border-radius:9px;background:var(--bg);text-align:center;cursor:pointer;font-size:.82rem;color:var(--ink2);transition:all .15s;user-select:none}
+.w-opt .wi{font-size:1.3rem;display:block;margin-bottom:2px}
+.w-opt.sel{border-color:var(--sky);background:var(--sky-p);color:var(--sky);font-weight:700}
+
+/* WORK ROWS */
+.work-rows{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.work-row{background:var(--bg);border:1.5px solid var(--bdr);border-radius:10px;padding:10px}
+.work-row:focus-within{border-color:var(--straw)}
+.wr-top{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.wr-bot{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.wr-num{font-size:.65rem;font-weight:900;color:var(--straw);margin-bottom:4px;letter-spacing:.05em}
+.btn-rm{width:36px;height:36px;border-radius:8px;background:var(--red-p);border:1px solid rgba(192,74,40,.2);color:var(--red);font-size:16px;cursor:pointer;display:grid;place-items:center;transition:all .15s;flex-shrink:0;align-self:end}
+.btn-rm:active{background:var(--red);color:#fff}
+.btn-add{width:100%;padding:11px;background:var(--leaf-p);border:1.5px dashed var(--leaf2);border-radius:9px;color:var(--leaf);font-family:'Noto Sans JP',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.04em}
+.btn-add:active{background:var(--leaf2);color:#fff;border-style:solid}
+
+/* PHOTO */
+.dropzone{border:2px dashed var(--straw);border-radius:10px;padding:20px 16px;text-align:center;cursor:pointer;background:var(--bg);transition:all .15s}
+.dropzone.over{border-color:var(--leaf);background:var(--leaf-p)}
+.dz-ico{font-size:1.8rem}.dz-txt{font-size:.82rem;color:var(--ink2);margin-top:4px}.dz-hint{font-size:.68rem;color:var(--ink3);margin-top:2px}
+.thumb-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.thumb{position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;box-shadow:0 2px 6px var(--shd)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .trm{position:absolute;top:3px;right:3px;width:19px;height:19px;border-radius:50%;background:rgba(192,74,40,.9);border:none;color:#fff;font-size:11px;cursor:pointer;display:grid;place-items:center}
+
+/* BUTTONS */
+.btn-save{width:100%;padding:14px;background:var(--leaf);color:#fff;border:none;border-radius:11px;font-family:'Noto Sans JP',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.08em;transition:all .15s;box-shadow:0 3px 10px rgba(59,110,47,.28);display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-save:active{background:var(--leaf2);transform:scale(.98)}
+.btn-save:disabled{background:var(--ink3);box-shadow:none;cursor:not-allowed}
+.btn-sm{padding:6px 13px;background:var(--bg);border:1.5px solid var(--bdr);border-radius:7px;font-family:'Noto Sans JP',sans-serif;font-size:.75rem;color:var(--ink2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-sm:active{background:var(--bg2)}
+.btn-del{padding:6px 13px;background:var(--red-p);border:1px solid rgba(192,74,40,.25);border-radius:7px;color:var(--red);font-family:'Noto Sans JP',sans-serif;font-size:.75rem;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-del:active{background:var(--red);color:#fff}
+.btn-outline{padding:10px 16px;background:transparent;border:1.5px solid var(--bdr);border-radius:9px;font-family:'Noto Sans JP',sans-serif;font-size:.85rem;color:var(--ink2);cursor:pointer;transition:all .15s;width:100%}
+.btn-outline:active{background:var(--bg2)}
+
+/* CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.chip{font-size:.66rem;padding:2px 7px;border-radius:20px;font-weight:700;white-space:nowrap}
+.c-g{background:var(--leaf-p);color:var(--leaf)}.c-a{background:var(--amber-p);color:var(--amber)}
+.c-b{background:var(--sky-p);color:var(--sky)}.c-p{background:var(--purple-p);color:var(--purple)}
+.c-s{background:var(--bg2);color:var(--ink2)}.c-gs{background:var(--green2-p);color:var(--green2)}
+
+/* DAY LIST */
+.day-card{background:var(--white);border:1.5px solid var(--bdr);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:0 2px 8px var(--shd)}
+.day-head{padding:12px 14px;background:var(--bg);border-bottom:1.5px solid var(--bdr);cursor:pointer}
+.day-head-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.day-date{font-family:'Noto Serif JP',serif;font-size:.92rem;font-weight:700;color:var(--soil)}
+.day-acts{display:flex;gap:5px;flex-shrink:0}
+.day-body{padding:12px 14px;display:none}
+.day-body.open{display:block}
+.wtbl{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:.83rem}
+.wtbl th{text-align:left;font-size:.68rem;font-weight:700;color:var(--ink3);padding:5px 8px;background:var(--bg);border-bottom:1.5px solid var(--bdr)}
+.wtbl th:last-child{text-align:right}
+.wtbl td{padding:7px 8px;border-bottom:1px solid var(--bg2)}
+.wtbl td:last-child{text-align:right;font-weight:700}
+.wtbl tr:last-child td{border-bottom:none}
+.memo{background:var(--bg);border-left:3px solid var(--straw);border-radius:0 8px 8px 0;padding:9px 12px;font-size:.83rem;line-height:1.75;color:var(--ink2);white-space:pre-wrap;margin-bottom:12px}
+.photo-row{display:flex;flex-wrap:wrap;gap:7px}
+.ptv{width:66px;height:66px;border-radius:8px;overflow:hidden;cursor:pointer}
+.ptv img{width:100%;height:100%;object-fit:cover}
+
+/* SYNC STATUS on list */
+.sync-icon{width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;vertical-align:middle;margin-left:4px}
+.sync-ok{background:var(--green2-p);color:var(--green2)}
+.sync-ng{background:var(--amber-p);color:var(--amber)}
+
+/* STATS */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.filter-row select{flex:1;min-width:120px}
+.sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.sc{background:var(--white);border:1.5px solid var(--bdr);border-radius:12px;padding:14px 12px;box-shadow:0 2px 8px var(--shd);text-align:center}
+.sc-lbl{font-size:.62rem;color:var(--ink3);font-weight:700;letter-spacing:.04em}
+.sc-val{font-size:1.5rem;font-weight:900;color:var(--soil);font-family:'Noto Serif JP',serif;line-height:1.2;margin-top:3px}
+.sc-sub{font-size:.62rem;color:var(--ink3)}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.stbl{width:100%;border-collapse:collapse;font-size:.8rem;min-width:340px}
+.stbl th{background:var(--soil);color:var(--straw2);font-size:.7rem;padding:8px 10px;text-align:left;font-weight:700;white-space:nowrap}
+.stbl th:not(:first-child){text-align:right}
+.stbl td{padding:7px 10px;border-bottom:1px solid var(--bg2)}
+.stbl td:not(:first-child){text-align:right}
+.stbl tr:hover td{background:var(--bg)}
+.stbl .tot td{background:var(--bg2);font-weight:700;border-top:2px solid var(--bdr)}
+.bar-row{display:flex;align-items:center;gap:6px;margin-top:3px}
+.bar-bg{flex:1;height:7px;background:var(--bg2);border-radius:4px;overflow:hidden}
+.bar-f{height:100%;background:var(--leaf2);border-radius:4px;transition:width .5s}
+.bar-lbl{font-size:.7rem;font-weight:700;color:var(--ink2);min-width:42px;text-align:right}
+.month-chart{display:flex;align-items:flex-end;gap:4px;height:110px;padding:0 0 22px;position:relative}
+.mc-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;position:relative}
+.mc-bar-wrap{flex:1;display:flex;align-items:flex-end;width:100%}
+.mc-bar{width:100%;border-radius:3px 3px 0 0;transition:height .4s;position:relative;min-height:0}
+.mc-lbl{position:absolute;bottom:-18px;font-size:.6rem;color:var(--ink3);white-space:nowrap;left:50%;transform:translateX(-50%)}
+.mc-val{position:absolute;top:-15px;font-size:.58rem;font-weight:700;color:var(--leaf);white-space:nowrap;left:50%;transform:translateX(-50%)}
+
+/* MASTER */
+.mcard{background:var(--white);border:1.5px solid var(--bdr);border-radius:12px;margin-bottom:14px;overflow:hidden}
+.mcard-head{padding:12px 16px;background:var(--bg);border-bottom:1.5px solid var(--bdr);font-size:.88rem;font-weight:700;color:var(--bark)}
+.mlist{list-style:none}
+.mlist li{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-bottom:1px solid var(--bg2);font-size:.85rem}
+.mlist li:last-child{border:none}
+.madd{display:flex;gap:8px;padding:12px 16px;background:var(--bg)}
+.madd input{flex:1}
+
+/* GAS SETTINGS */
+.gas-box{background:var(--green2-p);border:1.5px solid rgba(26,122,74,.25);border-radius:12px;padding:16px;margin-bottom:14px}
+.gas-box h3{font-size:.88rem;font-weight:700;color:var(--green2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.gas-status-row{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:.78rem;color:var(--ink2)}
+.gas-dot2{width:8px;height:8px;border-radius:50%;background:var(--ink3);flex-shrink:0}
+.gas-dot2.ok{background:var(--green2)}
+.gas-dot2.ng{background:var(--red)}
+.hint-box h4{font-size:.82rem;font-weight:700;color:var(--amber);margin-bottom:8px}
+.hint-box code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:.75rem;font-family:monospace;word-break:break-all}
+
+/* SPINNER */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+
+/* LIGHTBOX */
+.lb{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;align-items:center;justify-content:center}
+.lb.on{display:flex}
+.lb img{max-width:95vw;max-height:92vh;border-radius:8px}
+.lb-x{position:absolute;top:16px;right:18px;color:#fff;font-size:28px;cursor:pointer;background:none;border:none;line-height:1;width:40px;height:40px;display:grid;place-items:center}
+
+/* TOAST */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(50px);opacity:0;background:var(--soil);color:var(--straw2);padding:10px 22px;border-radius:28px;font-size:.85rem;font-weight:500;z-index:9998;pointer-events:none;transition:transform .28s cubic-bezier(.34,1.56,.64,1),opacity .28s;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.toast.on{transform:translateX(-50%) translateY(0);opacity:1}
+
+/* EMPTY */
+.empty{text-align:center;padding:50px 20px;color:var(--ink3)}
+.empty .ei{font-size:2.6rem;margin-bottom:10px}
+
+.list-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.list-filter input,.list-filter select{flex:1;min-width:130px;font-size:.85rem;padding:8px 10px}
+
+@media(max-width:400px){
+  .sc-val{font-size:1.3rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr">
+    <div class="hdr-brand">
+      <div class="hdr-icon">🌿</div>
+      <div class="hdr-title">農作業日誌</div>
+    </div>
+    <div class="hdr-date" id="hdrDate"></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ===== 記録 ===== -->
+<div class="page active" id="page-rec">
+  <div class="card">
+    <div class="sec-ttl">🌾 作業記録</div>
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="fg">
+        <label>日付 <span class="req">*</span></label>
+        <input type="date" id="recDate">
+      </div>
+      <div class="fg">
+        <label>作業者 <span class="req">*</span></label>
+        <select id="recWorker">
+          <option value="廣瀬篤蓮">廣瀬篤蓮</option>
+          <option value="髙田憲一">髙田憲一</option>
+          <option value="村上正和">村上正和</option>
+          <option value="松本憲一郎">松本憲一郎</option>
+          <option value="安倍重信">安倍重信</option>
+          <option value="本城健太">本城健太</option>
+          <option value="中嶋秀法">中嶋秀法</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="fg">
+        <label>勤務開始</label>
+        <input type="time" id="recStart">
+      </div>
+      <div class="fg">
+        <label>勤務終了</label>
+        <input type="time" id="recEnd">
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <div class="fg" style="max-width:160px">
+        <label>休憩時間</label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" id="recBreak" min="0" step="5" placeholder="0" style="text-align:right">
+          <span style="font-size:.85rem;color:var(--ink2);white-space:nowrap;flex-shrink:0">分</span>
+        </div>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:16px">
+      <label>天気</label>
+      <div class="weather-grid" id="weatherGrid">
+        <div class="w-opt" data-val="晴れ"         onclick="selW(this)"><span class="wi">☀️</span>晴れ</div>
+        <div class="w-opt" data-val="晴れ時々曇り" onclick="selW(this)"><span class="wi">⛅</span>晴れ曇り</div>
+        <div class="w-opt" data-val="曇り"         onclick="selW(this)"><span class="wi">☁️</span>曇り</div>
+        <div class="w-opt" data-val="雨"           onclick="selW(this)"><span class="wi">🌧️</span>雨</div>
+        <div class="w-opt" data-val="雷雨"         onclick="selW(this)"><span class="wi">⛈️</span>雷雨</div>
+        <div class="w-opt" data-val="雪"           onclick="selW(this)"><span class="wi">🌨️</span>雪</div>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:8px">
+      <label>作業内容 <span class="req">*</span>
+        <span style="font-weight:400;color:var(--ink3);margin-left:5px">（複数追加可）</span>
+      </label>
+    </div>
+    <div class="work-rows" id="workRows"></div>
+    <button class="btn-add" onclick="addRow()">＋ 作業を追加</button>
+    <div class="fg" style="margin-top:16px">
+      <label>写真（任意）</label>
+      <div class="dropzone" id="dz" onclick="document.getElementById('piInput').click()">
+        <div class="dz-ico">📷</div>
+        <div class="dz-txt">タップして写真を追加</div>
+        <div class="dz-hint">複数枚対応 / JPEG・PNG・HEIC</div>
+      </div>
+      <input type="file" id="piInput" accept="image/*" multiple style="display:none">
+      <div class="thumb-grid" id="thumbGrid"></div>
+    </div>
+    <div class="fg" style="margin-top:14px">
+      <label>1日のまとめメモ</label>
+      <textarea id="recMemo" placeholder="天気の詳細・気づき・特記事項など…"></textarea>
+    </div>
+    <div style="margin-top:16px">
+      <button class="btn-save" id="btnSave" onclick="saveLog()">
+        <span id="saveIcon">💾</span><span id="saveTxt">保存する</span>
+      </button>
+      <p style="font-size:.7rem;color:var(--ink3);text-align:center;margin-top:8px" id="saveNote">
+        同じ日付・作業者は上書きされます
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 一覧 ===== -->
+<div class="page" id="page-list">
+  <div class="list-filter">
+    <input type="month" id="listMonth" oninput="renderList()">
+    <select id="listWorker" onchange="renderList()"><option value="">全作業者</option></select>
+    <select id="listField"  onchange="renderList()"><option value="">全圃場</option></select>
+  </div>
+  <div id="dayList"></div>
+</div>
+
+<!-- ===== 集計 ===== -->
+<div class="page" id="page-stats">
+  <div class="filter-row">
+    <select id="sYear"   onchange="renderStats()"></select>
+    <select id="sField"  onchange="renderStats()"><option value="">全圃場</option></select>
+    <select id="sWorker" onchange="renderStats()"><option value="">全作業者</option></select>
+  </div>
+  <div class="sc-grid" id="scGrid"></div>
+  <div class="card">
+    <div class="sec-ttl" style="font-size:.85rem;margin-bottom:12px">圃場 × 作業種別　年間時間</div>
+    <div class="tbl-wrap" id="statsTable"></div>
+  </div>
+  <div class="card">
+    <div class="sec-ttl" style="font-size:.85rem;margin-bottom:12px">月別作業時間</div>
+    <div class="month-chart" id="monthChart"></div>
+  </div>
+</div>
+
+<!-- ===== 設定 ===== -->
+<div class="page" id="page-settings">
+    <div class="sec-ttl">⚙️ マスタ管理</div>
+  <div class="mcard">
+    <div class="mcard-head">👤 作業者</div>
+    <ul class="mlist" id="mWorkers"></ul>
+    <div class="madd">
+      <input type="text" id="nWorker" placeholder="名前を追加">
+      <button class="btn-sm" onclick="addM('workers','nWorker','mWorkers')">追加</button>
+    </div>
+  </div>
+  <div class="mcard">
+    <div class="mcard-head">📍 圃場</div>
+    <ul class="mlist" id="mFields"></ul>
+    <div class="madd">
+      <input type="text" id="nField" placeholder="圃場名を追加">
+      <button class="btn-sm" onclick="addM('fields','nField','mFields')">追加</button>
+    </div>
+  </div>
+  <div class="mcard">
+    <div class="mcard-head">🔧 作業種別</div>
+    <ul class="mlist" id="mWorks"></ul>
+    <div class="madd">
+      <input type="text" id="nWork" placeholder="作業名を追加">
+      <button class="btn-sm" onclick="addM('works','nWork','mWorks')">追加</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<nav class="bnav">
+  <button class="bnav-btn active" onclick="go('rec',this)"><span class="ico">📝</span>記録</button>
+  <button class="bnav-btn" onclick="go('list',this)"><span class="ico">📋</span>一覧</button>
+  <button class="bnav-btn" onclick="go('stats',this)"><span class="ico">📊</span>集計</button>
+  <button class="bnav-btn" onclick="go('settings',this)"><span class="ico">⚙️</span>設定</button>
+</nav>
+
+<div class="lb" id="lb" onclick="closeLb()">
+  <button class="lb-x">✕</button>
+  <img id="lbImg" src="" alt="">
+</div>
+<div class="toast" id="toast"></div>
+
+
+<script>
+/* ═══ GAS URL（固定） ═══ */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwkVQe55UTHk08xFpHvCfb8585hOvKxFWKKA4jz955NIH-nJx4d6qtfuqqq79Jvo9K8/exec';
+
+/* ═══ DEFAULTS ═══ */
+const DEFAULTS = {
+  workers:['廣瀬篤蓮','髙田憲一','村上正和','松本憲一郎','安倍重信','本城健太','中嶋秀法'],
+  fields:[
+    '有徳原1号園','有徳原2号園','有徳原3号園','有徳原4号園','有徳原農園',
+    '鳥越1番','鳥越2番','鳥越3番','鳥越4番','鳥越5番','鳥越6番','鳥越農園',
+    '山本農園','下毛農園','古民家','本社','農村ベース','工房'
+  ],
+  works:[
+    '芽かき','誘引','摘心','花穂整形',
+    'ジベレリン処理1回目','ジベレリン処理2回目',
+    '摘粒','袋掛け','草刈り','潅水','防除',
+    '仮剪定','剪定','ハウス管理','圃場管理',
+    '施肥','堆肥散布','定植','収穫','出荷',
+    '販売','事務','イベント','加工','竹林整備'
+  ]
+};
+
+let master  = JSON.parse(localStorage.getItem('fjM')||'null') || JSON.parse(JSON.stringify(DEFAULTS));
+let logs    = JSON.parse(localStorage.getItem('fjL')||'{}');
+let photos  = [];
+let rowId   = 0;
+let weather = '';
+
+
+const saveM = ()=> localStorage.setItem('fjM', JSON.stringify(master));
+const saveL = ()=> localStorage.setItem('fjL', JSON.stringify(logs));
+const $     = id => document.getElementById(id);
+const esc   = s  => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+
+/* ═══ INIT ═══ */
+(function init(){ try {
+  const now = new Date();
+  $('hdrDate').textContent = now.toLocaleDateString('ja-JP',{month:'short',day:'numeric',weekday:'short'});
+  $('recDate').value = now.toISOString().slice(0,10);
+  $('listMonth').value = now.toISOString().slice(0,7);
+  const ys=$('sYear');
+  if(ys) for(let y=now.getFullYear();y>=2020;y--) ys.innerHTML+=`<option value="${y}">${y}年</option>`;
+  const pi=$('piInput'); if(pi) pi.addEventListener('change', e=>handleFiles(e.target.files));
+  const dz=$('dz');
+  if(dz){
+    dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+    dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+    dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');handleFiles(e.dataTransfer.files);});
+  }
+
+  addRow();
+  renderMaster();
+  syncAll();
+  // GAS URL: コード内定数GAS_URLを使用
+  }catch(outerE){ console.error('init outer error:', outerE); }
+})();
+
+/* ═══ NAVIGATION ═══ */
+function go(id, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+  $('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='list')     renderList();
+  if(id==='stats')    renderStats();
+  if(id==='settings') renderMaster();
+}
+
+/* ═══ WEATHER ═══ */
+function selW(el){
+  document.querySelectorAll('.w-opt').forEach(e=>e.classList.remove('sel'));
+  if(weather===el.dataset.val){ weather=''; }
+  else{ el.classList.add('sel'); weather=el.dataset.val; }
+}
+
+/* ═══ WORK ROWS ═══ */
+function addRow(){
+  const id=rowId++;
+  const d=document.createElement('div');
+  d.className='work-row'; d.id='wr-'+id;
+  d.innerHTML=`
+    <div class="wr-num">作業 ${id+1}</div>
+    <div class="wr-top">
+      <div class="fg">
+        <label style="font-size:.68rem;color:var(--ink3)">圃場</label>
+        <select class="rf">${master.fields.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('')}</select>
+      </div>
+      <div class="fg">
+        <label style="font-size:.68rem;color:var(--ink3)">作業種別</label>
+        <select class="rk">${master.works.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="wr-bot">
+      <div class="fg">
+        <label style="font-size:.68rem;color:var(--ink3)">作業時間（h）</label>
+        <select class="rt" style="background:#fff;text-align:right">
+        <option value="0">0</option>
+        <option value="0.5">0.5</option>
+        <option value="1">1</option>
+        <option value="1.5">1.5</option>
+        <option value="2">2</option>
+        <option value="2.5">2.5</option>
+        <option value="3">3</option>
+        <option value="3.5">3.5</option>
+        <option value="4">4</option>
+        <option value="4.5">4.5</option>
+        <option value="5">5</option>
+        <option value="5.5">5.5</option>
+        <option value="6">6</option>
+        <option value="6.5">6.5</option>
+        <option value="7">7</option>
+        <option value="7.5">7.5</option>
+        <option value="8">8</option>
+        <option value="8.5">8.5</option>
+        <option value="9">9</option>
+        <option value="9.5">9.5</option>
+        <option value="10">10</option>
+        <option value="10.5">10.5</option>
+        <option value="11">11</option>
+        <option value="11.5">11.5</option>
+        <option value="12">12</option>
+      </select>
+      </div>
+      <button class="btn-rm" onclick="rmRow('wr-${id}')">✕</button>
+    </div>`;
+  $('workRows').appendChild(d);
+}
+function rmRow(id){
+  if(document.querySelectorAll('.work-row').length<=1){showToast('⚠️ 最低1行必要です');return;}
+  $(id)?.remove();
+}
+function getRows(){
+  return [...document.querySelectorAll('.work-row')].map(r=>({
+    field:r.querySelector('.rf').value,
+    work: r.querySelector('.rk').value,
+    time: parseFloat(r.querySelector('.rt').value)||0
+  }));
+}
+
+/* ═══ PHOTOS ═══ */
+function handleFiles(fs){
+  [...fs].forEach(f=>{
+    if(!f.type.startsWith('image/'))return;
+    const r=new FileReader();
+    r.onload=e=>{photos.push(e.target.result);renderThumbs();};
+    r.readAsDataURL(f);
+  });
+}
+function renderThumbs(){
+  $('thumbGrid').innerHTML=photos.map((s,i)=>`
+    <div class="thumb"><img src="${s}">
+    <button class="trm" onclick="photos.splice(${i},1);renderThumbs()">✕</button></div>`).join('');
+}
+
+/* ═══ SAVE ═══ */
+async function saveLog(){
+  const date=$('recDate').value;
+  if(!date){showToast('⚠️ 日付を入力してください');return;}
+  const worker=$('recWorker').value;
+  if(!worker){showToast('⚠️ 作業者を選択してください');return;}
+  const rows=getRows().filter(r=>r.field&&r.work);
+  if(!rows.length){showToast('⚠️ 作業を1つ以上入力してください');return;}
+
+  const key=`${date}__${worker}`;
+  const breakMin = parseInt($('recBreak').value)||0;
+  const logData={
+    date, worker, weather,
+    timeStart:$('recStart').value,
+    timeEnd:  $('recEnd').value,
+    breakMin,
+    rows, memo:$('recMemo').value,
+    photos:[...photos],
+    synced: false
+  };
+
+  // ローカル保存
+  logs[key]=logData; saveL();
+
+  // クリップボードにLINE用テキストをコピー
+  copyToClipboard(logData);
+
+  // GAS→スプレッドシートに送信（JSONP方式でCORS完全回避）
+  setSaving(true);
+  try{
+    const params = new URLSearchParams({
+      action:    'write',
+      date:      date,
+      worker:    worker,
+      weather:   weather,
+      timeStart: logData.timeStart,
+      timeEnd:   logData.timeEnd,
+      breakMin:  logData.breakMin||0,
+      rows:      encodeURIComponent(JSON.stringify(rows)),
+      memo:      encodeURIComponent(logData.memo||''),
+      callback:  'gasCallback'
+    });
+    await new Promise((resolve, reject) => {
+      const cbName = 'gasCallback';
+      window[cbName] = function(res){
+        delete window[cbName];
+        if(res && res.status === 'ok') resolve(res);
+        else reject(new Error(JSON.stringify(res)));
+      };
+      const s = document.createElement('script');
+      s.src = GAS_URL + '?' + params.toString();
+      s.onerror = () => { delete window[cbName]; reject(new Error('script load error')); };
+      document.head.appendChild(s);
+      setTimeout(() => { delete window[cbName]; resolve({status:'timeout'}); }, 8000);
+    });
+    logs[key].synced=true; saveL();
+    setSaving(false);
+    showToast('✅ 保存・シート転送・LINEコピー完了！');
+  }catch(err){
+    setSaving(false);
+    console.error('GAS送信エラー:', err);
+    showToast('✅ ローカル保存＆コピー完了');
+  }
+
+  // reset
+  photos=[]; renderThumbs();
+  $('recMemo').value='';
+  $('recStart').value=''; $('recEnd').value=''; $('recBreak').value='';
+  weather=''; document.querySelectorAll('.w-opt').forEach(e=>e.classList.remove('sel'));
+  $('workRows').innerHTML=''; rowId=0; addRow();
+}
+
+/* ─ LINEコピー用テキスト生成＆クリップボード ─ */
+function buildLineText(l){
+  const wIco={晴れ:'☀️','晴れ時々曇り':'⛅',曇り:'☁️',雨:'🌧️',雷雨:'⛈️',雪:'🌨️'};
+  const d = new Date(l.date+'T00:00:00');
+  const dateStr = d.toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'});
+  let txt = `🌿 農作業日誌\n`;
+  txt += `📅 ${dateStr}\n`;
+  txt += `👤 ${l.worker}\n`;
+  if(l.weather) txt += `${wIco[l.weather]||''} ${l.weather}\n`;
+  if(l.timeStart||l.timeEnd){
+    let tline=`🕐 ${l.timeStart||''}〜${l.timeEnd||''}`;
+    if(l.breakMin) tline+=`（休憩${l.breakMin}分）`;
+    txt += tline+'\n';
+  }
+  txt += `─────────────\n`;
+  l.rows.forEach(r=>{
+    if(r.field&&r.work){
+      txt += `📍 ${r.field}｜${r.work}`;
+      if(r.time) txt += `　${r.time}h`;
+      txt += `\n`;
+    }
+  });
+  if(l.memo){
+    txt += `─────────────\n`;
+    txt += `📝 ${l.memo}\n`;
+  }
+  return txt;
+}
+
+function copyToClipboard(l){
+  const txt = buildLineText(l);
+  navigator.clipboard.writeText(txt).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  });
+}
+
+function setSaving(on){
+  const btn=$('btnSave');
+  if(on){
+    btn.disabled=true;
+    btn.innerHTML='<span class="spin"></span><span>送信中…</span>';
+  }else{
+    btn.disabled=false;
+    btn.innerHTML='<span>💾</span><span>保存する</span>';
+  }
+}
+
+/* ═══ RESEND UNSYNCED ═══ */
+/* ═══ LIST ═══ */
+function renderList(){
+  const month=$('listMonth').value;
+  const fw=$('listWorker').value;
+  const ff=$('listField').value;
+  syncAll();
+  const keys=Object.keys(logs)
+    .filter(k=>!month||logs[k].date.startsWith(month))
+    .filter(k=>!fw||logs[k].worker===fw)
+    .filter(k=>!ff||logs[k].rows.some(r=>r.field===ff))
+    .sort((a,b)=>b.localeCompare(a));
+
+  const el=$('dayList');
+  let banner='';
+
+  if(!keys.length){
+    el.innerHTML=banner+`<div class="empty"><div class="ei">🌱</div><p>記録がありません</p></div>`;return;
+  }
+  const wIco={晴れ:'☀️','晴れ時々曇り':'⛅',曇り:'☁️',雨:'🌧️',雷雨:'⛈️',雪:'🌨️'};
+  el.innerHTML=banner+keys.map(k=>{
+    const l=logs[k];
+    const total=Math.round(l.rows.reduce((s,r)=>s+r.time,0)*10)/10;
+    const fields=[...new Set(l.rows.map(r=>r.field))];
+    const ts=l.timeStart&&l.timeEnd?`${l.timeStart}〜${l.timeEnd}`:(l.timeStart||l.timeEnd||'');
+    const syncIcon='';
+    return `
+    <div class="day-card">
+      <div class="day-head" onclick="toggle('db-${k}')">
+        <div class="day-head-top">
+          <div>
+            <div class="day-date">${fmtD(l.date)}${syncIcon}</div>
+            <div class="chips">
+              <span class="chip c-p">👤 ${esc(l.worker)}</span>
+              ${l.weather?`<span class="chip c-b">${wIco[l.weather]||''} ${esc(l.weather)}</span>`:''}
+              ${ts?`<span class="chip c-s">🕐 ${ts}</span>`:''}
+              ${l.breakMin?`<span class="chip c-s">☕ 休憩${l.breakMin}分</span>`:''}
+            </div>
+          </div>
+          <div class="day-acts">
+            <button class="btn-sm" onclick="event.stopPropagation();editLog('${k}')">編集</button>
+            <button class="btn-del" onclick="event.stopPropagation();delLog('${k}')">削除</button>
+          </div>
+        </div>
+        <div class="chips" style="margin-top:6px">
+          ${fields.map(f=>`<span class="chip c-g">📍${esc(f)}</span>`).join('')}
+          <span class="chip c-a">⏱ ${total}h</span>
+          ${l.photos?.length>0?`<span class="chip c-b">📷${l.photos.length}</span>`:''}
+        </div>
+      </div>
+      <div class="day-body" id="db-${k}">
+        <table class="wtbl">
+          <thead><tr><th>圃場</th><th>作業種別</th><th>時間</th></tr></thead>
+          <tbody>${l.rows.map(r=>`<tr><td>${esc(r.field)}</td><td>${esc(r.work)}</td><td>${r.time}h</td></tr>`).join('')}</tbody>
+        </table>
+        ${l.memo?`<div class="memo">${esc(l.memo)}</div>`:''}
+        ${l.photos?.length>0?`<div class="photo-row">${l.photos.map(s=>`<div class="ptv" onclick="openLb('${s}')"><img src="${s}" loading="lazy"></div>`).join('')}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggle(id){$(id)?.classList.toggle('open');}
+
+function editLog(k){
+  const l=logs[k];
+  $('recDate').value=l.date;
+  $('recWorker').value=l.worker;
+  $('recStart').value=l.timeStart||'';
+  $('recEnd').value=l.timeEnd||'';
+  $('recBreak').value=l.breakMin||0;
+  weather=l.weather||'';
+  document.querySelectorAll('.w-opt').forEach(e=>{e.classList.remove('sel');if(e.dataset.val===weather)e.classList.add('sel');});
+  $('workRows').innerHTML=''; rowId=0;
+  photos=l.photos?[...l.photos]:[];
+  renderThumbs();
+  $('recMemo').value=l.memo||'';
+  l.rows.forEach(r=>{
+    addRow();
+    const last=document.querySelector('.work-row:last-child');
+    last.querySelector('.rf').value=r.field;
+    last.querySelector('.rk').value=r.work;
+    last.querySelector('.rt').value=r.time;
+  });
+  delete logs[k]; saveL();
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.bnav-btn').forEach(b=>b.classList.remove('active'));
+  $('page-rec').classList.add('active');
+  document.querySelectorAll('.bnav-btn')[0].classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+  showToast('📝 編集モードで開きました');
+}
+
+function delLog(k){
+  if(!confirm('この記録を削除しますか？'))return;
+  delete logs[k]; saveL(); renderList(); showToast('🗑 削除しました');
+}
+
+/* ═══ STATS ═══ */
+function renderStats(){
+  const year=parseInt($('sYear').value);
+  const ff=$('sField').value;
+  const fw=$('sWorker').value;
+  syncAll();
+  let allLogs=Object.values(logs).filter(l=>l.date.startsWith(year));
+  if(fw) allLogs=allLogs.filter(l=>l.worker===fw);
+  let rows=allLogs.flatMap(l=>l.rows.map(r=>({...r,date:l.date})));
+  if(ff) rows=rows.filter(r=>r.field===ff);
+
+  const total=Math.round(rows.reduce((s,r)=>s+r.time,0)*10)/10;
+  const days=new Set(rows.map(r=>r.date)).size;
+  const avg=days?Math.round(total/days*10)/10:0;
+  $('scGrid').innerHTML=`
+    <div class="sc"><div class="sc-lbl">年間合計</div><div class="sc-val">${total}<span style="font-size:.8rem">h</span></div><div class="sc-sub">${year}年</div></div>
+    <div class="sc"><div class="sc-lbl">作業日数</div><div class="sc-val">${days}<span style="font-size:.8rem">日</span></div><div class="sc-sub">記録あり</div></div>
+    <div class="sc"><div class="sc-lbl">日平均</div><div class="sc-val">${avg}<span style="font-size:.8rem">h</span></div><div class="sc-sub">作業日あたり</div></div>`;
+
+  if(!rows.length){
+    $('statsTable').innerHTML='<p style="font-size:.83rem;color:var(--ink3);padding:12px 0">データがありません</p>';
+    $('monthChart').innerHTML='';return;
+  }
+  const fields=ff?[ff]:[...new Set(rows.map(r=>r.field))].sort();
+  const works=[...new Set(rows.map(r=>r.work))].sort();
+  const piv={};
+  rows.forEach(r=>{if(!piv[r.field])piv[r.field]={};piv[r.field][r.work]=(piv[r.field][r.work]||0)+r.time;});
+  const rTots=fields.map(f=>Math.round(Object.values(piv[f]||{}).reduce((s,v)=>s+v,0)*10)/10);
+  const mxH=Math.max(...rTots,1);
+
+  let tbl=`<table class="stbl"><thead><tr><th>圃場</th>${works.map(w=>`<th>${esc(w)}</th>`).join('')}<th>合計</th></tr></thead><tbody>`;
+  fields.forEach((f,i)=>{
+    const rt=rTots[i];
+    tbl+=`<tr><td><div style="font-weight:700;font-size:.82rem">${esc(f)}</div>
+      <div class="bar-row"><div class="bar-bg"><div class="bar-f" style="width:${Math.round(rt/mxH*100)}%"></div></div>
+      <span class="bar-lbl">${rt}h</span></div></td>
+      ${works.map(w=>`<td>${piv[f]?.[w]??'–'}</td>`).join('')}<td><strong>${rt}h</strong></td></tr>`;
+  });
+  const grand=Math.round(rows.reduce((s,r)=>s+r.time,0)*10)/10;
+  tbl+=`<tr class="tot"><td>合計</td>${works.map(w=>{const s=Math.round(rows.filter(r=>r.work===w).reduce((a,b)=>a+b.time,0)*10)/10;return`<td>${s||'–'}</td>`;}).join('')}<td>${grand}h</td></tr>`;
+  tbl+='</tbody></table>';
+  $('statsTable').innerHTML=tbl;
+
+  const mxM=Math.max(...Array.from({length:12},(_,i)=>{
+    const mm=String(i+1).padStart(2,'0');
+    return rows.filter(r=>r.date.startsWith(`${year}-${mm}`)).reduce((s,r)=>s+r.time,0);
+  }),1);
+  $('monthChart').innerHTML=Array.from({length:12},(_,i)=>{
+    const mm=String(i+1).padStart(2,'0');
+    const v=Math.round(rows.filter(r=>r.date.startsWith(`${year}-${mm}`)).reduce((s,r)=>s+r.time,0)*10)/10;
+    const pct=v?Math.max(v/mxM*100,3):0;
+    return `<div class="mc-col"><div class="mc-bar-wrap"><div class="mc-bar" style="height:${pct}%;background:${v?'var(--leaf2)':'var(--bg2)'}" title="${v}h">
+      ${v>0?`<span class="mc-val">${v}</span>`:''}
+    </div></div><span class="mc-lbl">${i+1}月</span></div>`;
+  }).join('');
+}
+
+/* ═══ MASTER ═══ */
+function renderMaster(){
+  [['workers','mWorkers'],['fields','mFields'],['works','mWorks']].forEach(([k,id])=>{
+    $(id).innerHTML=master[k].map((v,i)=>`
+      <li><span>${esc(v)}</span>
+      <button class="btn-del" onclick="delM('${k}',${i})">削除</button></li>`).join('');
+  });
+}
+function addM(key,inp,ul){
+  const v=$(inp).value.trim();if(!v)return;
+  if(master[key].includes(v)){showToast('⚠️ 既に存在します');return;}
+  master[key].push(v);saveM();renderMaster();syncAll();
+  $(inp).value='';showToast('✅ 追加しました');
+}
+function delM(key,i){
+  if(!confirm(`「${master[key][i]}」を削除しますか？`))return;
+  master[key].splice(i,1);saveM();renderMaster();syncAll();
+}
+
+/* ═══ GAS 設定 ═══（削除済み）═══ */
+
+/* ═══ SYNC ALL SELECTS ═══ */
+function syncAll(){
+  const rw=$('recWorker');
+  if(rw){
+    const c=rw.value;
+    rw.innerHTML=master.workers.map(w=>`<option value="${esc(w)}">${esc(w)}</option>`).join('');
+    if(master.workers.includes(c)) rw.value=c;
+  }
+  document.querySelectorAll('.rf').forEach(s=>{const c=s.value;s.innerHTML=master.fields.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');s.value=c;});
+  document.querySelectorAll('.rk').forEach(s=>{const c=s.value;s.innerHTML=master.works.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('');s.value=c;});
+  [['listWorker','全作業者'],['sWorker','全作業者']].forEach(([id,lbl])=>{
+    const el=$(id);if(!el)return;const c=el.value;
+    el.innerHTML=`<option value="">${lbl}</option>`+master.workers.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    el.value=c;
+  });
+  [['listField','全圃場'],['sField','全圃場']].forEach(([id,lbl])=>{
+    const el=$(id);if(!el)return;const c=el.value;
+    el.innerHTML=`<option value="">${lbl}</option>`+master.fields.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+    el.value=c;
+  });
+}
+
+/* ═══ UTILS ═══ */
+function fmtD(d){return new Date(d+'T00:00:00').toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});}
+function openLb(src){$('lbImg').src=src;$('lb').classList.add('on');}
+function closeLb(){$('lb').classList.remove('on');}
+function showToast(msg){
+  const t=$('toast');t.textContent=msg;t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),2800);
+}
+</script>
+
+<!-- GASコード -->
+<script type="text/plain" id="gasCodeTpl">
+const SHEET = '作業記録';
+function doGet(e) {
+  try {
+    const p = e.parameter;
+    if (!p.action) return out({status:'ok',message:'農作業日誌GAS稼働中'});
+    if (p.action === 'write') {
+      const ss = SpreadsheetApp.getActiveSpreadsheet();
+      let sh = ss.getSheetByName(SHEET);
+      if (!sh) {
+        sh = ss.insertSheet(SHEET);
+        sh.appendRow(['送信日時','日付','作業者','天気','勤務開始','勤務終了','休憩(分)','圃場','作業種別','作業時間(h)','メモ']);
+        sh.getRange(1,1,1,11).setFontWeight('bold').setBackground('#2c1d0e').setFontColor('#d4ae6e');
+        sh.setFrozenRows(1);
+      }
+      const rows = JSON.parse(decodeURIComponent(p.rows || '[]'));
+      const now  = new Date();
+      rows.forEach(function(r) {
+        sh.appendRow([now, p.date||'', p.worker||'', p.weather||'',
+          p.timeStart||'', p.timeEnd||'', Number(p.breakMin)||0,
+          r.field||'', r.work||'', r.time||0,
+          decodeURIComponent(p.memo||'')]);
+      });
+      sh.autoResizeColumns(1, 11);
+      return out({status:'ok', written: rows.length});
+    }
+    return out({status:'error',message:'unknown action'});
+  } catch(err) { return out({status:'error',message:err.toString()}); }
+}
+function out(obj){
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+</script>
+</body>
+</html>
